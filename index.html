@@ -1,0 +1,1153 @@
+import { useState, useEffect, useRef } from "react";
+
+// ─── DESIGN TOKENS ──────────────────────────────────────────────────────────
+const C = {
+  night: "#09090F",
+  deep: "#12121C",
+  card: "#16162A",
+  cardHover: "#1C1C32",
+  gold: "#C4A45A",
+  goldDim: "rgba(196,164,90,0.12)",
+  goldBorder: "rgba(196,164,90,0.30)",
+  goldGlow: "rgba(196,164,90,0.08)",
+  cream: "#EDE8DF",
+  creamDim: "rgba(237,232,223,0.58)",
+  muted: "#70708A",
+  mutedDark: "#3E3E5C",
+  border: "rgba(255,255,255,0.07)",
+  borderHover: "rgba(255,255,255,0.13)",
+  error: "#C87878",
+};
+
+const F = {
+  serif: "'Playfair Display', Georgia, serif",
+  sans: "'Inter', -apple-system, sans-serif",
+};
+
+// ─── SHARED STYLES ──────────────────────────────────────────────────────────
+const S = {
+  screen: (visible) => ({
+    minHeight: "100vh",
+    opacity: visible ? 1 : 0,
+    transition: "opacity 0.4s ease",
+    background: C.night,
+    color: C.cream,
+    fontFamily: F.sans,
+    WebkitFontSmoothing: "antialiased",
+  }),
+  wrap: {
+    maxWidth: 620,
+    margin: "0 auto",
+    padding: "60px 24px 100px",
+  },
+  label: {
+    display: "block",
+    fontFamily: F.serif,
+    fontStyle: "italic",
+    fontSize: 15,
+    color: C.creamDim,
+    marginBottom: 12,
+    lineHeight: 1.65,
+  },
+  micro: {
+    fontSize: 12,
+    color: C.muted,
+    marginTop: 8,
+    lineHeight: 1.6,
+  },
+  microError: {
+    fontSize: 12,
+    color: C.error,
+    marginTop: 8,
+    lineHeight: 1.6,
+  },
+  input: (hasError) => ({
+    width: "100%",
+    background: C.card,
+    border: `1px solid ${hasError ? C.error : C.border}`,
+    borderRadius: 8,
+    color: C.cream,
+    fontFamily: F.sans,
+    fontSize: 15,
+    padding: "13px 16px",
+    outline: "none",
+    transition: "border-color 0.2s ease, background 0.2s ease",
+    boxSizing: "border-box",
+  }),
+  textarea: (hasError) => ({
+    width: "100%",
+    background: C.card,
+    border: `1px solid ${hasError ? C.error : C.border}`,
+    borderRadius: 8,
+    color: C.cream,
+    fontFamily: F.sans,
+    fontSize: 15,
+    padding: "13px 16px",
+    outline: "none",
+    resize: "vertical",
+    minHeight: 130,
+    lineHeight: 1.7,
+    transition: "border-color 0.2s ease",
+    boxSizing: "border-box",
+  }),
+  btn: {
+    background: "transparent",
+    border: `1px solid ${C.gold}`,
+    color: C.gold,
+    fontFamily: F.sans,
+    fontSize: 13,
+    fontWeight: 500,
+    letterSpacing: "0.08em",
+    padding: "13px 36px",
+    borderRadius: 2,
+    cursor: "pointer",
+    transition: "all 0.25s ease",
+  },
+  tag: (selected) => ({
+    background: selected ? C.goldDim : C.card,
+    border: `1px solid ${selected ? C.goldBorder : C.border}`,
+    borderRadius: 100,
+    color: selected ? C.gold : C.creamDim,
+    fontFamily: F.sans,
+    fontSize: 13,
+    padding: "7px 16px",
+    cursor: "pointer",
+    transition: "all 0.18s ease",
+    whiteSpace: "nowrap",
+  }),
+  choiceCard: (selected) => ({
+    background: selected ? C.goldDim : C.card,
+    border: `1px solid ${selected ? C.goldBorder : C.border}`,
+    borderRadius: 8,
+    color: selected ? C.cream : C.creamDim,
+    fontFamily: F.serif,
+    fontStyle: "italic",
+    fontSize: 15,
+    lineHeight: 1.55,
+    padding: "15px 20px",
+    cursor: "pointer",
+    textAlign: "left",
+    width: "100%",
+    transition: "all 0.18s ease",
+  }),
+  durationBtn: (selected) => ({
+    background: selected ? C.goldDim : C.card,
+    border: `1px solid ${selected ? C.goldBorder : C.border}`,
+    borderRadius: 8,
+    color: selected ? C.gold : C.creamDim,
+    fontFamily: F.sans,
+    fontSize: 14,
+    padding: "13px 20px",
+    cursor: "pointer",
+    textAlign: "left",
+    width: "100%",
+    transition: "all 0.18s ease",
+  }),
+  fieldGroup: {
+    marginBottom: 40,
+  },
+};
+
+// ─── FOCUS HANDLER ──────────────────────────────────────────────────────────
+function useFieldFocus() {
+  const [focused, setFocused] = useState(false);
+  return {
+    focused,
+    handlers: {
+      onFocus: () => setFocused(true),
+      onBlur: () => setFocused(false),
+    },
+  };
+}
+
+// ─── INPUT COMPONENT ─────────────────────────────────────────────────────────
+function TextInput({ value, onChange, placeholder, hasError, style }) {
+  const { focused, handlers } = useFieldFocus();
+  return (
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      {...handlers}
+      style={{
+        ...S.input(hasError),
+        borderColor: hasError ? C.error : focused ? "rgba(196,164,90,0.45)" : C.border,
+        background: focused ? "#1A1A2E" : C.card,
+        ...style,
+      }}
+    />
+  );
+}
+
+function TextArea({ value, onChange, placeholder, hasError, rows = 5 }) {
+  const { focused, handlers } = useFieldFocus();
+  return (
+    <textarea
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      rows={rows}
+      {...handlers}
+      style={{
+        ...S.textarea(hasError),
+        borderColor: hasError ? C.error : focused ? "rgba(196,164,90,0.45)" : C.border,
+        background: focused ? "#1A1A2E" : C.card,
+      }}
+    />
+  );
+}
+
+// ─── PRIMARY BUTTON ─────────────────────────────────────────────────────────
+function PrimaryBtn({ children, onClick, style }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        ...S.btn,
+        boxShadow: hov ? `0 0 28px rgba(196,164,90,0.18)` : "none",
+        background: hov ? C.goldGlow : "transparent",
+        ...style,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ─── SENTENCE BLANK ─────────────────────────────────────────────────────────
+function SentenceBlank({ prefix, suffix, value, onChange, placeholder, hasError }) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        alignItems: "baseline",
+        gap: 8,
+        background: C.card,
+        border: `1px solid ${hasError ? C.error : focused ? "rgba(196,164,90,0.45)" : C.border}`,
+        borderRadius: 8,
+        padding: "13px 16px",
+        transition: "border-color 0.2s ease",
+        lineHeight: 1.9,
+      }}
+    >
+      {prefix && (
+        <span style={{ fontFamily: F.sans, fontSize: 15, color: C.muted, whiteSpace: "nowrap" }}>
+          {prefix}
+        </span>
+      )}
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        style={{
+          background: "transparent",
+          border: "none",
+          borderBottom: `1px solid ${focused ? C.gold : C.goldBorder}`,
+          borderRadius: 0,
+          color: C.cream,
+          fontFamily: F.sans,
+          fontSize: 15,
+          padding: "1px 4px",
+          flex: 1,
+          minWidth: 140,
+          outline: "none",
+          transition: "border-color 0.2s ease",
+        }}
+      />
+      {suffix && (
+        <span style={{ fontFamily: F.sans, fontSize: 15, color: C.muted, whiteSpace: "nowrap" }}>
+          {suffix}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ─── PERMISSION BLOCK ────────────────────────────────────────────────────────
+function PermissionBlock({ value, onChange, hasError }) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <div
+      style={{
+        background: C.card,
+        border: `1px solid ${hasError ? C.error : focused ? "rgba(196,164,90,0.45)" : C.border}`,
+        borderRadius: 8,
+        padding: "20px 20px 16px",
+        transition: "border-color 0.2s ease",
+      }}
+    >
+      <span
+        style={{ display: "block", fontFamily: F.serif, fontStyle: "italic", fontSize: 15, color: C.muted, marginBottom: 10 }}
+      >
+        I give myself permission to
+      </span>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="take the step, say the truth, let go, begin..."
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        style={{
+          background: "transparent",
+          border: "none",
+          borderBottom: `1px solid ${focused ? C.gold : C.goldBorder}`,
+          borderRadius: 0,
+          color: C.cream,
+          fontFamily: F.serif,
+          fontStyle: "italic",
+          fontSize: 16,
+          padding: "4px 0",
+          width: "100%",
+          outline: "none",
+          transition: "border-color 0.2s ease",
+        }}
+      />
+      <span
+        style={{ display: "block", fontFamily: F.serif, fontStyle: "italic", fontSize: 15, color: C.muted, marginTop: 10 }}
+      >
+        without waiting to feel completely ready.
+      </span>
+    </div>
+  );
+}
+
+// ─── DECISION SENTENCE ───────────────────────────────────────────────────────
+function DecisionSentence({ actionVal, byVal, onAction, onBy, hasError }) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        alignItems: "center",
+        gap: 8,
+        background: C.card,
+        border: `1px solid ${hasError ? C.error : focused ? "rgba(196,164,90,0.45)" : C.border}`,
+        borderRadius: 8,
+        padding: "13px 16px",
+        fontSize: 15,
+        lineHeight: 2,
+        transition: "border-color 0.2s ease",
+      }}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+    >
+      <span style={{ color: C.muted, whiteSpace: "nowrap" }}>I need to decide whether I will</span>
+      <input
+        type="text"
+        value={actionVal}
+        onChange={(e) => onAction(e.target.value)}
+        placeholder="leave, stay, say yes, start..."
+        style={{
+          background: "transparent", border: "none",
+          borderBottom: `1px solid ${C.goldBorder}`, borderRadius: 0,
+          color: C.cream, fontFamily: F.sans, fontSize: 15,
+          padding: "0 4px 1px", flex: 1, minWidth: 140, outline: "none",
+        }}
+      />
+      <span style={{ color: C.muted, whiteSpace: "nowrap" }}>by</span>
+      <input
+        type="text"
+        value={byVal}
+        onChange={(e) => onBy(e.target.value)}
+        placeholder="end of this month..."
+        style={{
+          background: "transparent", border: "none",
+          borderBottom: `1px solid ${C.goldBorder}`, borderRadius: 0,
+          color: C.cream, fontFamily: F.sans, fontSize: 15,
+          padding: "0 4px 1px", flex: 1, minWidth: 120, outline: "none",
+        }}
+      />
+    </div>
+  );
+}
+
+// ─── SECTION HEADER ──────────────────────────────────────────────────────────
+function SectionHeader({ label, step, title, intro }) {
+  return (
+    <div style={{ marginBottom: 44 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+        <span style={{ fontFamily: F.sans, fontSize: 11, fontWeight: 500, letterSpacing: "0.2em", textTransform: "uppercase", color: C.gold }}>
+          {label}
+        </span>
+        <span style={{ fontFamily: F.sans, fontSize: 11, letterSpacing: "0.12em", color: C.muted }}>
+          {step}
+        </span>
+      </div>
+      <h2 style={{ fontFamily: F.serif, fontSize: "clamp(22px, 4vw, 30px)", fontWeight: 400, color: C.cream, marginBottom: 14, lineHeight: 1.3 }}>
+        {title}
+      </h2>
+      <p style={{ fontFamily: F.serif, fontStyle: "italic", fontSize: 15.5, color: C.creamDim, lineHeight: 1.8, paddingBottom: 28, borderBottom: `1px solid ${C.border}` }}>
+        {intro}
+      </p>
+    </div>
+  );
+}
+
+// ─── DIVIDER ─────────────────────────────────────────────────────────────────
+function GoldDivider() {
+  return <div style={{ width: 40, height: 1, background: C.goldBorder, margin: "28px 0" }} />;
+}
+
+// ─── WELCOME SCREEN ──────────────────────────────────────────────────────────
+function WelcomeScreen({ onBegin, visible }) {
+  return (
+    <div style={{ ...S.screen(visible), display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 24px", textAlign: "center", position: "relative", overflow: "hidden" }}>
+      {/* Ambient glow */}
+      <div style={{ position: "absolute", width: 700, height: 700, background: "radial-gradient(circle, rgba(196,164,90,0.055) 0%, transparent 65%)", top: "50%", left: "50%", transform: "translate(-50%,-50%)", pointerEvents: "none", animation: "breathe 7s ease-in-out infinite" }} />
+      <style>{`@keyframes breathe { 0%,100%{opacity:.6;transform:translate(-50%,-50%) scale(1)} 50%{opacity:1;transform:translate(-50%,-50%) scale(1.12)} }`}</style>
+
+      <p style={{ fontFamily: F.sans, fontSize: 11, fontWeight: 500, letterSpacing: "0.22em", textTransform: "uppercase", color: C.gold, marginBottom: 32 }}>
+        The Decision Room
+      </p>
+
+      <h1 style={{ fontFamily: F.serif, fontSize: "clamp(28px, 5vw, 46px)", fontWeight: 400, lineHeight: 1.2, maxWidth: 560, marginBottom: 32, color: C.cream }}>
+        The Night You{" "}
+        <em style={{ fontStyle: "italic", color: C.gold }}>Stopped Trusting Yourself</em>
+      </h1>
+
+      <p style={{ fontFamily: F.sans, fontSize: 15, lineHeight: 1.85, color: C.creamDim, maxWidth: 460, marginBottom: 18 }}>
+        You've been thinking about this decision for a while. Long enough that it doesn't feel like a decision anymore — it feels like a weight. Something you carry everywhere without anyone knowing it's there.
+      </p>
+      <p style={{ fontFamily: F.sans, fontSize: 15, lineHeight: 1.85, color: C.creamDim, maxWidth: 460, marginBottom: 18 }}>
+        This isn't a quiz. There's no score. No generic advice at the end.
+      </p>
+      <p style={{ fontFamily: F.sans, fontSize: 15, lineHeight: 1.85, color: C.creamDim, maxWidth: 460, marginBottom: 36 }}>
+        This is a place to finally look at it honestly — the decision you've been circling — and come out the other side with one clear thing to do.
+      </p>
+
+      <p style={{ fontFamily: F.sans, fontSize: 12, color: C.muted, marginBottom: 44, letterSpacing: "0.04em" }}>
+        About 15 minutes. Just you.
+      </p>
+
+      <PrimaryBtn onClick={onBegin}>Begin the journey</PrimaryBtn>
+    </div>
+  );
+}
+
+// ─── TRANSITION SCREEN ───────────────────────────────────────────────────────
+function TransitionScreen({ lines, onContinue, visible, nextSection }) {
+  return (
+    <div style={{ ...S.screen(visible), display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 24px", textAlign: "center", position: "relative" }}>
+      <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at center, rgba(196,164,90,0.04) 0%, transparent 60%)", pointerEvents: "none" }} />
+
+      <p style={{ fontFamily: F.sans, fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: C.muted, marginBottom: 56 }}>
+        {nextSection}
+      </p>
+
+      <div style={{ maxWidth: 480 }}>
+        {lines.map((line, i) => (
+          <p
+            key={i}
+            style={{
+              fontFamily: F.serif,
+              fontStyle: "italic",
+              fontSize: i === 0 ? "clamp(22px,3.5vw,30px)" : 17,
+              fontWeight: i === 0 ? 600 : 400,
+              color: i === 0 ? C.cream : C.creamDim,
+              lineHeight: 1.55,
+              marginBottom: i === 0 ? 20 : 14,
+            }}
+          >
+            {line}
+          </p>
+        ))}
+      </div>
+
+      <div style={{ width: 1, height: 48, background: C.goldBorder, margin: "36px auto 0" }} />
+      <PrimaryBtn onClick={onContinue} style={{ marginTop: 36 }}>
+        Continue
+      </PrimaryBtn>
+    </div>
+  );
+}
+
+// ─── SECTION 1: THE SCENE ────────────────────────────────────────────────────
+function Section1({ form, up, tog, errors, onNext, visible }) {
+  const sensations = ["tight chest","heavy shoulders","restless mind","blank feeling","low energy","irritability","can't sleep","sudden hunger","disconnected"];
+  const durations = ["Less than a month","1 to 3 months","3 to 6 months","More than 6 months","I stopped counting"];
+
+  return (
+    <div style={S.screen(visible)}>
+      <div style={S.wrap}>
+        <SectionHeader
+          label="The Scene"
+          step="01 / 04"
+          title="Name it."
+          intro="Something brought you here. Maybe you've been avoiding it for weeks. Maybe months. The weight of it — the circular thinking, the midnight calculations — starts right here, with the simple act of naming it out loud."
+        />
+
+        {/* Field 1 */}
+        <div style={S.fieldGroup}>
+          <span style={S.label}>Say it plainly, even if it still feels blurry.</span>
+          <DecisionSentence
+            actionVal={form.decisionAction}
+            byVal={form.decisionBy}
+            onAction={(v) => up("decisionAction", v)}
+            onBy={(v) => up("decisionBy", v)}
+            hasError={!!(errors.decisionAction || errors.decisionBy)}
+          />
+          {errors.decisionAction && <p style={S.microError}>{errors.decisionAction}</p>}
+          {errors.decisionBy && <p style={S.microError}>{errors.decisionBy}</p>}
+          <p style={S.micro}>Don't edit for perfection. This sentence is for you, not anyone else.</p>
+        </div>
+
+        {/* Field 2 */}
+        <div style={S.fieldGroup}>
+          <span style={S.label}>How long have you been carrying this?</span>
+          <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+            {durations.map((d) => (
+              <button key={d} onClick={() => up("duration", d)} style={S.durationBtn(form.duration === d)}>
+                {d}
+              </button>
+            ))}
+          </div>
+          {errors.duration && <p style={S.microError}>{errors.duration}</p>}
+        </div>
+
+        {/* Field 3 */}
+        <div style={S.fieldGroup}>
+          <span style={S.label}>What does this decision feel like in your body? Select everything that's been showing up.</span>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
+            {sensations.map((s) => (
+              <button key={s} onClick={() => tog("bodySensations", s)} style={S.tag(form.bodySensations.includes(s))}>
+                {s}
+              </button>
+            ))}
+            <button onClick={() => tog("bodySensations", "other")} style={S.tag(form.bodySensations.includes("other"))}>
+              something else
+            </button>
+          </div>
+          {form.bodySensations.includes("other") && (
+            <div style={{ marginTop: 12 }}>
+              <TextInput
+                value={form.bodySensationsOther}
+                onChange={(v) => up("bodySensationsOther", v)}
+                placeholder="name it in your own words..."
+              />
+            </div>
+          )}
+          {errors.bodySensations && <p style={S.microError}>{errors.bodySensations}</p>}
+          <p style={S.micro}>Your body's been holding this longer than you realize.</p>
+        </div>
+
+        <div style={{ textAlign: "center", paddingTop: 8 }}>
+          <PrimaryBtn onClick={onNext}>Keep going →</PrimaryBtn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── SECTION 2: THE ROOT ─────────────────────────────────────────────────────
+function Section2({ form, up, errors, onNext, visible }) {
+  const fears = [
+    "If this doesn't work, it means I was never as capable as I thought.",
+    "If I move forward, I'll lose something I'm not ready to lose.",
+    "If this works, I'll have to keep being the person who made it happen.",
+  ];
+  const charCount = form.lastBlock.trim().length;
+  const remaining = Math.max(0, 50 - charCount);
+
+  return (
+    <div style={S.screen(visible)}>
+      <div style={S.wrap}>
+        <SectionHeader
+          label="The Root"
+          step="02 / 04"
+          title="Find what's underneath."
+          intro="You don't keep avoiding a decision because you're lazy or broken. You keep avoiding it because something underneath it feels like a threat. Let's find out what that something is."
+        />
+
+        {/* Field 4 */}
+        <div style={S.fieldGroup}>
+          <span style={S.label}>The voice in your head. The one that's been loudest about this decision. What does it keep saying?</span>
+          <SentenceBlank
+            prefix="I keep telling myself:"
+            value={form.innerVoice}
+            onChange={(v) => up("innerVoice", v)}
+            placeholder="it's not the right time, I'm not ready yet, what if it fails..."
+            hasError={!!errors.innerVoice}
+          />
+          {errors.innerVoice && <p style={S.microError}>{errors.innerVoice}</p>}
+          <p style={S.micro}>This isn't judgment. It's just witness.</p>
+        </div>
+
+        {/* Field 5 */}
+        <div style={S.fieldGroup}>
+          <span style={S.label}>Underneath the story — what are you actually afraid of?</span>
+          <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+            {fears.map((f) => (
+              <button key={f} onClick={() => up("fearType", f)} style={S.choiceCard(form.fearType === f)}>
+                {f}
+              </button>
+            ))}
+            <button onClick={() => up("fearType", "other")} style={S.choiceCard(form.fearType === "other")}>
+              Something else entirely.
+            </button>
+          </div>
+          {form.fearType === "other" && (
+            <div style={{ marginTop: 12 }}>
+              <TextInput
+                value={form.fearTypeOther}
+                onChange={(v) => up("fearTypeOther", v)}
+                placeholder="say it plainly..."
+              />
+            </div>
+          )}
+          {errors.fearType && <p style={S.microError}>{errors.fearType}</p>}
+          <p style={S.micro}>Pick the one that stings a little. That's usually the real one.</p>
+        </div>
+
+        {/* Field 6 */}
+        <div style={S.fieldGroup}>
+          <span style={S.label}>The last time you almost made this decision — what stopped you? Don't say "fear." Say exactly what happened.</span>
+          <TextArea
+            value={form.lastBlock}
+            onChange={(v) => up("lastBlock", v)}
+            placeholder="I was about to tell my manager, and then I... / I had it planned, and then... / I opened the document and closed it because..."
+            hasError={!!errors.lastBlock}
+          />
+          <p style={{ ...S.micro, color: remaining === 0 ? C.gold : C.muted }}>
+            {remaining > 0
+              ? `${remaining} more characters — the more specific, the more useful.`
+              : "That's the kind of honesty this works with."}
+          </p>
+          {errors.lastBlock && <p style={S.microError}>{errors.lastBlock}</p>}
+        </div>
+
+        <div style={{ textAlign: "center", paddingTop: 8 }}>
+          <PrimaryBtn onClick={onNext}>Keep going →</PrimaryBtn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── SECTION 3: THE TURN ─────────────────────────────────────────────────────
+function Section3({ form, up, tog, errors, onNext, visible }) {
+  const futureEmotions = ["the same","more stuck","regret","relieved","numb","resentful","disconnected","comfortable but flat"];
+
+  return (
+    <div style={S.screen(visible)}>
+      <div style={S.wrap}>
+        <SectionHeader
+          label="The Turn"
+          step="03 / 04"
+          title="See both futures."
+          intro="You've spent a lot of time in the fear of moving. This part asks you to feel what it costs you to stay still — and then name what you actually want on the other side."
+        />
+
+        {/* Field 7 */}
+        <div style={S.fieldGroup}>
+          <span style={S.label}>One year from today. You still haven't made this decision. How do you feel?</span>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
+            {futureEmotions.map((e) => (
+              <button key={e} onClick={() => tog("futureEmotions", e)} style={S.tag(form.futureEmotions.includes(e))}>
+                {e}
+              </button>
+            ))}
+            <button onClick={() => tog("futureEmotions", "other")} style={S.tag(form.futureEmotions.includes("other"))}>
+              something else
+            </button>
+          </div>
+          {form.futureEmotions.includes("other") && (
+            <div style={{ marginTop: 12 }}>
+              <TextInput
+                value={form.futureEmotionsOther}
+                onChange={(v) => up("futureEmotionsOther", v)}
+                placeholder="name it..."
+              />
+            </div>
+          )}
+          {errors.futureEmotions && <p style={S.microError}>{errors.futureEmotions}</p>}
+          <p style={S.micro}>Stay in that future for a moment. Let it land.</p>
+        </div>
+
+        {/* Field 8 */}
+        <div style={S.fieldGroup}>
+          <span style={S.label}>Now — the other future. You made the decision. Something shifted. What's the one feeling you most want on the other side?</span>
+          <TextInput
+            value={form.desiredFeeling}
+            onChange={(v) => up("desiredFeeling", v)}
+            placeholder="light, free, grounded, myself again, at peace..."
+            hasError={!!errors.desiredFeeling}
+          />
+          {errors.desiredFeeling && <p style={S.microError}>{errors.desiredFeeling}</p>}
+          <p style={S.micro}>One word is enough. Or a few. Whatever's true for you — not what sounds right.</p>
+        </div>
+
+        {/* Field 9 */}
+        <div style={S.fieldGroup}>
+          <span style={S.label}>Now say it to yourself — the thing you've needed permission to do.</span>
+          <PermissionBlock
+            value={form.permissionMiddle}
+            onChange={(v) => up("permissionMiddle", v)}
+            hasError={!!errors.permissionMiddle}
+          />
+          {errors.permissionMiddle && <p style={S.microError}>{errors.permissionMiddle}</p>}
+          <p style={S.micro}>This isn't journaling. This is a declaration. Write it like you mean it.</p>
+        </div>
+
+        <div style={{ textAlign: "center", paddingTop: 8 }}>
+          <PrimaryBtn onClick={onNext}>Keep going →</PrimaryBtn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── SECTION 4: THE FIRST MOVE ───────────────────────────────────────────────
+function Section4({ form, up, errors, onNext, visible }) {
+  const times = ["Before noon", "By 3pm", "Before end of day", "Tonight"];
+
+  return (
+    <div style={S.screen(visible)}>
+      <div style={S.wrap}>
+        <SectionHeader
+          label="The First Move"
+          step="04 / 04"
+          title="One thing. Today."
+          intro="Not a plan. Not a strategy. Not a list of steps. One small, real, specific thing you will do — not think about doing — today. That's the only ask."
+        />
+
+        {/* Field 10 */}
+        <div style={S.fieldGroup}>
+          <span style={S.label}>Name the move. Make it so small it would embarrass you to say you didn't do it.</span>
+          <SentenceBlank
+            prefix="I will"
+            value={form.actionText}
+            onChange={(v) => up("actionText", v)}
+            placeholder="send the message, write the first sentence, make the call..."
+            hasError={!!errors.actionText}
+          />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 9, marginTop: 12 }}>
+            {times.map((t) => (
+              <button key={t} onClick={() => up("actionTime", t)} style={S.tag(form.actionTime === t)}>
+                {t}
+              </button>
+            ))}
+          </div>
+          {errors.actionText && <p style={S.microError}>{errors.actionText}</p>}
+          {errors.actionTime && <p style={S.microError}>{errors.actionTime}</p>}
+          <p style={S.micro}>If it feels too small, that means it's the right size to actually start.</p>
+        </div>
+
+        {/* Field 11 */}
+        <div style={S.fieldGroup}>
+          <span style={S.label}>Who will know? Name one person you'll tell that you did this — even if it's just a text tonight.</span>
+          <TextInput
+            value={form.accountability}
+            onChange={(v) => up("accountability", v)}
+            placeholder="just a name..."
+            hasError={!!errors.accountability}
+          />
+          {errors.accountability && <p style={S.microError}>{errors.accountability}</p>}
+          <p style={S.micro}>Accountability isn't pressure. It's just a witness.</p>
+        </div>
+
+        {/* Field 12 */}
+        <div style={{ ...S.fieldGroup, marginBottom: 0 }}>
+          <span style={{ ...S.label, marginBottom: 14 }}>Optional — share your declaration.</span>
+          <div
+            style={{
+              background: C.card,
+              border: `1px solid ${C.border}`,
+              borderRadius: 8,
+              padding: "18px 20px",
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 18,
+            }}
+          >
+            <label style={{ position: "relative", width: 44, height: 24, flexShrink: 0, cursor: "pointer", marginTop: 2 }}>
+              <input
+                type="checkbox"
+                checked={form.shareToggle}
+                onChange={(e) => up("shareToggle", e.target.checked)}
+                style={{ opacity: 0, width: 0, height: 0, position: "absolute" }}
+              />
+              <div style={{
+                position: "absolute", inset: 0,
+                background: form.shareToggle ? C.gold : C.mutedDark,
+                borderRadius: 12, transition: "background 0.2s ease",
+              }}>
+                <div style={{
+                  position: "absolute", width: 18, height: 18,
+                  background: C.cream, borderRadius: "50%",
+                  top: 3, left: form.shareToggle ? 23 : 3,
+                  transition: "left 0.2s ease",
+                }} />
+              </div>
+            </label>
+            <div>
+              <p style={{ fontFamily: F.sans, fontSize: 14, fontWeight: 500, color: C.cream, marginBottom: 5 }}>
+                Share with The Decision Room
+              </p>
+              <p style={{ fontFamily: F.sans, fontSize: 13, color: C.muted, lineHeight: 1.65 }}>
+                Sometimes the bravest thing is letting someone else witness your beginning. What you wrote here is yours — but if you want, you can let the community hold it with you.
+              </p>
+            </div>
+          </div>
+
+          {form.shareToggle && (
+            <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
+              {["Share with my name", "Share anonymously"].map((opt, i) => (
+                <button
+                  key={opt}
+                  onClick={() => up("shareAnon", i === 1)}
+                  style={{ ...S.durationBtn((i === 1) === form.shareAnon), flex: 1 }}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div style={{ textAlign: "center", paddingTop: 48 }}>
+          <PrimaryBtn onClick={onNext}>See where you landed →</PrimaryBtn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── CLOSING SCREEN ──────────────────────────────────────────────────────────
+function ClosingScreen({ onSummary, visible }) {
+  const checks = [
+    "You named the decision — out loud, in a sentence, with a deadline.",
+    "You found the belief that's been running the loop.",
+    "You felt both futures — the one you've been drifting toward, and the one you want.",
+    "You gave yourself permission. Without conditions.",
+    "You chose one move. Today. With a time.",
+  ];
+
+  return (
+    <div style={{ ...S.screen(visible), display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "80px 24px" }}>
+      <div style={{ maxWidth: 560, textAlign: "center" }}>
+        <p style={{ fontFamily: F.sans, fontSize: 11, fontWeight: 500, letterSpacing: "0.22em", textTransform: "uppercase", color: C.gold, marginBottom: 32 }}>
+          The Decision Room
+        </p>
+        <h2 style={{ fontFamily: F.serif, fontSize: "clamp(24px,4vw,36px)", fontWeight: 400, color: C.cream, marginBottom: 16 }}>
+          Look at what you just did.
+        </h2>
+        <p style={{ fontFamily: F.serif, fontStyle: "italic", fontSize: 16, color: C.creamDim, lineHeight: 1.75, marginBottom: 48 }}>
+          Not what you planned to do. Not what you almost did.<br />
+          What you actually did. Right here, in fifteen minutes.
+        </p>
+
+        <ul style={{ listStyle: "none", textAlign: "left", marginBottom: 44, padding: 0 }}>
+          {checks.map((c) => (
+            <li key={c} style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 18, fontSize: 15, color: C.creamDim, lineHeight: 1.6 }}>
+              <span style={{ color: C.gold, flexShrink: 0, fontSize: 16, marginTop: 1 }}>✓</span>
+              <span>{c}</span>
+            </li>
+          ))}
+        </ul>
+
+        <p style={{ fontFamily: F.sans, fontSize: 13, color: C.muted, lineHeight: 1.7, marginBottom: 40 }}>
+          This isn't transformation. That's not how it works.<br />
+          This is a beginning. The only kind that's real.
+        </p>
+
+        <PrimaryBtn onClick={onSummary}>Read your summary →</PrimaryBtn>
+      </div>
+    </div>
+  );
+}
+
+// ─── SUMMARY SCREEN ──────────────────────────────────────────────────────────
+function SummaryScreen({ form, visible }) {
+  const fearDisplay = form.fearType === "other" ? form.fearTypeOther : form.fearType;
+  const emotionList = [
+    ...form.futureEmotions.filter((e) => e !== "other"),
+    ...(form.futureEmotions.includes("other") && form.futureEmotionsOther ? [form.futureEmotionsOther] : []),
+  ];
+  const sensationList = [
+    ...form.bodySensations.filter((s) => s !== "other"),
+    ...(form.bodySensations.includes("other") && form.bodySensationsOther ? [form.bodySensationsOther] : []),
+  ];
+
+  const H = ({ children }) => (
+    <span style={{ color: C.cream, fontStyle: "italic" }}>{children}</span>
+  );
+  const G = ({ children }) => (
+    <span style={{ color: C.gold }}>{children}</span>
+  );
+
+  return (
+    <div style={S.screen(visible)}>
+      <div style={S.wrap}>
+        <p style={{ fontFamily: F.sans, fontSize: 11, fontWeight: 500, letterSpacing: "0.22em", textTransform: "uppercase", color: C.gold, marginBottom: 22 }}>
+          Your Summary
+        </p>
+        <h2 style={{ fontFamily: F.serif, fontSize: "clamp(24px,4vw,36px)", fontWeight: 400, color: C.cream, marginBottom: 48, lineHeight: 1.3 }}>
+          Here's what you know now.
+        </h2>
+
+        <p style={{ fontFamily: F.serif, fontSize: 17, lineHeight: 1.9, color: C.creamDim, marginBottom: 0 }}>
+          You came here carrying a decision:{" "}
+          <H>
+            "I need to decide whether I will{" "}
+            {form.decisionAction || "..."}{" "}
+            by {form.decisionBy || "..."}."
+          </H>{" "}
+          {form.duration && (
+            <>You've been carrying it for <H>{form.duration.toLowerCase()}</H>.</>
+          )}{" "}
+          {sensationList.length > 0 && (
+            <>In your body, it's been showing up as <H>{sensationList.join(", ")}</H>.</>
+          )}
+        </p>
+
+        <GoldDivider />
+
+        <p style={{ fontFamily: F.serif, fontSize: 17, lineHeight: 1.9, color: C.creamDim }}>
+          {form.innerVoice && (
+            <>
+              The voice in your head has been telling you: <H>"{form.innerVoice}"</H>.{" "}
+            </>
+          )}
+          {fearDisplay && (
+            <>
+              But underneath that story, what you're actually carrying is this: <H>{fearDisplay}</H>
+            </>
+          )}
+          {form.lastBlock && (
+            <>{" "}The last time you almost moved — {form.lastBlock}</>
+          )}
+        </p>
+
+        <GoldDivider />
+
+        <p style={{ fontFamily: F.serif, fontSize: 17, lineHeight: 1.9, color: C.creamDim }}>
+          {emotionList.length > 0 && (
+            <>
+              If you stay still for another year, you know you'll feel{" "}
+              <H>{emotionList.join(", ")}</H>.{" "}
+            </>
+          )}
+          But what you actually want on the other side of this decision is to feel{" "}
+          <G>{form.desiredFeeling || "..."}</G>.
+        </p>
+
+        <GoldDivider />
+
+        {form.permissionMiddle && (
+          <p style={{ fontFamily: F.serif, fontStyle: "italic", fontSize: 19, lineHeight: 1.75, color: C.cream, padding: "20px 0" }}>
+            "I give myself permission to{" "}
+            <G>{form.permissionMiddle}</G>{" "}
+            without waiting to feel completely ready."
+          </p>
+        )}
+
+        <GoldDivider />
+
+        <p style={{ fontFamily: F.serif, fontSize: 17, lineHeight: 1.9, color: C.creamDim }}>
+          {form.actionTime && (
+            <>{form.actionTime}, </>
+          )}
+          {form.actionText && (
+            <>you will <H>{form.actionText}</H>. </>
+          )}
+          {form.accountability && (
+            <>{form.accountability} will know you did it.</>
+          )}
+        </p>
+
+        <div
+          style={{
+            marginTop: 60,
+            paddingTop: 36,
+            borderTop: `1px solid ${C.border}`,
+            textAlign: "center",
+          }}
+        >
+          <p style={{ fontFamily: F.sans, fontSize: 11, fontWeight: 500, letterSpacing: "0.22em", textTransform: "uppercase", color: C.muted, marginBottom: 14 }}>
+            You've arrived.
+          </p>
+          <p style={{ fontFamily: F.serif, fontStyle: "italic", fontSize: "clamp(20px,3.5vw,28px)", color: C.cream }}>
+            Welcome to The Decision Room.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── MAIN APP ────────────────────────────────────────────────────────────────
+export default function DecisionRoomGuide() {
+  const [screen, setScreen] = useState("welcome");
+  const [visible, setVisible] = useState(true);
+  const [errors, setErrors] = useState({});
+  const [form, setForm] = useState({
+    decisionAction: "",
+    decisionBy: "",
+    duration: "",
+    bodySensations: [],
+    bodySensationsOther: "",
+    innerVoice: "",
+    fearType: "",
+    fearTypeOther: "",
+    lastBlock: "",
+    futureEmotions: [],
+    futureEmotionsOther: "",
+    desiredFeeling: "",
+    permissionMiddle: "",
+    actionText: "",
+    actionTime: "",
+    accountability: "",
+    shareToggle: false,
+    shareAnon: false,
+  });
+
+  useEffect(() => {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&family=Inter:wght@300;400;500;600&display=swap";
+    document.head.appendChild(link);
+
+    const style = document.createElement("style");
+    style.textContent = `
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { background: #09090F; }
+      input::placeholder, textarea::placeholder { color: #3E3E5C; }
+      button:focus-visible { outline: 2px solid rgba(196,164,90,0.5); outline-offset: 2px; }
+      input:focus, textarea:focus { outline: none; }
+      @media (max-width: 480px) {
+        .decision-sentence { flex-direction: column; }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(link);
+      document.head.removeChild(style);
+    };
+  }, []);
+
+  const goTo = (next) => {
+    setVisible(false);
+    setTimeout(() => {
+      setScreen(next);
+      setVisible(true);
+      window.scrollTo({ top: 0, behavior: "auto" });
+    }, 420);
+  };
+
+  const up = (k, v) => setForm((p) => ({ ...p, [k]: v }));
+  const tog = (k, v) =>
+    setForm((p) => ({
+      ...p,
+      [k]: p[k].includes(v) ? p[k].filter((x) => x !== v) : [...p[k], v],
+    }));
+
+  const validate1 = () => {
+    const e = {};
+    if (!form.decisionAction.trim()) e.decisionAction = "Name the decision — even roughly.";
+    if (!form.decisionBy.trim()) e.decisionBy = "Give it a time. Any time.";
+    if (!form.duration) e.duration = "Choose the one that feels closest.";
+    if (form.bodySensations.length === 0) e.bodySensations = "At least one — your body already knows.";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const validate2 = () => {
+    const e = {};
+    if (!form.innerVoice.trim()) e.innerVoice = "Finish the sentence. Even imperfectly.";
+    if (!form.fearType) e.fearType = "Pick the one that stings a little.";
+    if (form.lastBlock.trim().length < 50) e.lastBlock = `${50 - form.lastBlock.trim().length} more characters — the more specific, the more useful.`;
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const validate3 = () => {
+    const e = {};
+    if (form.futureEmotions.length === 0) e.futureEmotions = "What does that future feel like?";
+    if (!form.desiredFeeling.trim()) e.desiredFeeling = "Just one word. Or a few. Yours.";
+    if (!form.permissionMiddle.trim()) e.permissionMiddle = "Complete the permission. Even if it feels big.";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const validate4 = () => {
+    const e = {};
+    if (!form.actionText.trim()) e.actionText = "Name the move. Even a tiny one.";
+    if (!form.actionTime) e.actionTime = "Give it a time — make it real.";
+    if (!form.accountability.trim()) e.accountability = "Just a name. One person.";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const T1_LINES = [
+    "You named it.",
+    "Something shifts the moment you stop calling it 'the thing I've been thinking about' and give it an actual shape.",
+    "Most people spend years in the fog of the unnamed. You just walked out of it.",
+    "Now let's find out why it's been so hard to move.",
+  ];
+
+  const T2_LINES = [
+    "That was real.",
+    "Most people never let themselves look that directly at what's underneath the story.",
+    "You just did.",
+    "Now we move from what's keeping you here — to where you actually want to go.",
+  ];
+
+  const T3_LINES = [
+    "That wasn't journaling.",
+    "A declaration is different. You didn't describe how you feel — you decided how you want to live.",
+    "There's only one thing left.",
+    "Let's make it concrete.",
+  ];
+
+  return (
+    <div style={{ background: C.night, minHeight: "100vh" }}>
+      {screen === "welcome" && <WelcomeScreen onBegin={() => goTo("s1")} visible={visible} />}
+      {screen === "s1" && (
+        <Section1 form={form} up={up} tog={tog} errors={errors}
+          onNext={() => { if (validate1()) { setErrors({}); goTo("t1"); } }}
+          visible={visible}
+        />
+      )}
+      {screen === "t1" && (
+        <TransitionScreen lines={T1_LINES} onContinue={() => goTo("s2")} visible={visible} nextSection="Section 02 / 04" />
+      )}
+      {screen === "s2" && (
+        <Section2 form={form} up={up} errors={errors}
+          onNext={() => { if (validate2()) { setErrors({}); goTo("t2"); } }}
+          visible={visible}
+        />
+      )}
+      {screen === "t2" && (
+        <TransitionScreen lines={T2_LINES} onContinue={() => goTo("s3")} visible={visible} nextSection="Section 03 / 04" />
+      )}
+      {screen === "s3" && (
+        <Section3 form={form} up={up} tog={tog} errors={errors}
+          onNext={() => { if (validate3()) { setErrors({}); goTo("t3"); } }}
+          visible={visible}
+        />
+      )}
+      {screen === "t3" && (
+        <TransitionScreen lines={T3_LINES} onContinue={() => goTo("s4")} visible={visible} nextSection="Section 04 / 04" />
+      )}
+      {screen === "s4" && (
+        <Section4 form={form} up={up} errors={errors}
+          onNext={() => { if (validate4()) { setErrors({}); goTo("closing"); } }}
+          visible={visible}
+        />
+      )}
+      {screen === "closing" && <ClosingScreen onSummary={() => goTo("summary")} visible={visible} />}
+      {screen === "summary" && <SummaryScreen form={form} visible={visible} />}
+    </div>
+  );
+}
